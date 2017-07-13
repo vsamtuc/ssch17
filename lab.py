@@ -129,6 +129,15 @@ class projection:
     def __hash__(self):
         return hash(self.hf)^self.width
 
+    def hash(self, x):
+        """
+        Return the hashed cells for a key.
+
+        This method returns the vector of cells (of dimension equal
+        to the depth), into which key `x` hashes.
+        """
+        return self.hf.hash(x) % self.width
+
     def epsilon(self):
         """
         Return the error guarantee for AMS sketches, for 
@@ -168,7 +177,7 @@ class ams_sketch(basic_sketch):
         Add a new key frequency to the sketch.
         """
 
-        pos = self.proj.hf.hash(key) % self.proj.width
+        pos = self.proj.hash(key)
         delta = self.proj.hf.fourwise(key)*freq
         self.vec[range(self.proj.depth), pos] += delta
 
@@ -224,7 +233,7 @@ class count_min_sketch(basic_sketch):
         """
         Add a new key frequency to the sketch.
         """
-        pos = self.proj.hf.hash(key) % self.proj.width
+        pos = self.proj.hash(key)
         self.vec[range(self.proj.depth), pos] += freq
 
 
