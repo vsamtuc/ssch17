@@ -29,6 +29,17 @@ def make_random_data(nkeys, length):
     return np.random.randint(nkeys, size=length)
 
 
+def make_gaussian_data(sigma, length):
+    """
+    Create a gaussian random data vector, with `sigma` standard deviation and `length` elements.
+    
+    The generated values will all be nonnegative integers.
+    """
+    v = np.random.normal(0, sigma, length)
+    v -= np.min(v)
+    return v.astype(np.int)
+
+
 class hash_family:
     """
     A family of hash functions.
@@ -223,7 +234,6 @@ def ams_sketch_inner(sk1, sk2):
 
 
 
-
 class count_min_sketch(basic_sketch):
     """
     Count-Min sketch
@@ -236,7 +246,32 @@ class count_min_sketch(basic_sketch):
         pos = self.proj.hash(key)
         self.vec[range(self.proj.depth), pos] += freq
 
+    def __matmul__(self, other):
+        """
+        Return the estimated inner product of two Count-min sketches.
+        
+        This method implements the @ operator, e.g., sk1 @ sk2
+        The implementation forwards the result of function
+        `count_min_sketch_inner(self, other)`.
+        """
+        if not isinstance(other, count_min_sketch):
+            return NotImplemented
+        return count_min_sketch_inner(self, other)
+        
+        
+def count_min_sketch_inner(sk1, sk2):
+    """
+    Return the estimated inner product of two Count-min sketches.
 
+    The estimate is the minimum of the depth-size vector of
+    the inner products of corresponding columns., i.e.,
+        min { sum_j sk1[i,j]*sk2[i,j]  | i=1,...,depth }
+    """
+    if sk1.proj!=sk2.proj:
+        raise ValueError("Sketches do not have equal projection")
+    return np.min(np.einsum('ij,ij->i',sk1.vec, sk2.vec))
+
+        
 
 
 def frequency_vector_inner(s1, s2):
